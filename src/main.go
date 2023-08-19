@@ -2,17 +2,6 @@
 // vim: foldmarker={{{,}}}
 package main
 
-/*
- TODO:
- - [ ] fazer o tetris
-   - [X] fazer todas as peças cairem
-   - [ ] game over
-   - [X] hold
-     - [X] visualização
-   - [X] next
-     - [X] visualização
- - [ ] score
-*/
 
 import (
 	"container/list"

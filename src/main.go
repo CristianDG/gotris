@@ -2,7 +2,6 @@
 // vim: foldmarker={{{,}}}
 package main
 
-
 import (
 	"container/list"
 
@@ -194,11 +193,11 @@ func main() {
 
 	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Gotris")
 	defer rl.CloseWindow()
-	rl.SetTargetFPS(60)
+	rl.SetTargetFPS(15)
 
 	NEXT_TETROMINOS.PushBack(getRandomTetromino(nil))
 
-	populateNext := func(){
+	populateNext := func() {
 		var previous TetrominoEnum = NEXT_TETROMINOS.Back().Value.(TetrominoEnum)
 		NEXT_TETROMINOS.PushBack(getRandomTetromino(&previous))
 	}
@@ -260,7 +259,7 @@ func main() {
 	}
 
 	for {
-		if rl.WindowShouldClose() || rl.IsKeyPressed(rl.KeyQ) {
+		if rl.WindowShouldClose() {
 			break
 		}
 
@@ -272,92 +271,65 @@ func main() {
 		}
 
 		// input {{{
-		for {
-			// TODO: trocar para ifs :+1: e usar keydown tbm
-
-			var key = rl.GetKeyPressed()
-			if key == 0 {
-				break
+		var button = rl.GetGamepadButtonPressed()
+		if rl.IsKeyPressed(rl.KeyQ) || button == 6 {
+			break
+		} else if rl.IsKeyPressed(rl.KeyR) || rl.IsKeyPressed(rl.KeyUp) || rl.IsGamepadButtonPressed(1, 8) || rl.IsGamepadButtonPressed(1, 1) {
+			// NOTE: fds :+1:
+			if canPlace(tetromino.rotatedRight(), tetromino_x, tetromino_y) {
+				tetromino = tetromino.rotatedRight()
+			} else if canPlace(tetromino.rotatedRight(), tetromino_x, tetromino_y-1) {
+				// FIXME: isso não funciona para peças como L J e I
+				tetromino_y -= 1
+				tetromino = tetromino.rotatedRight()
+			} else if canPlace(tetromino.rotatedRight(), tetromino_x+1, tetromino_y) {
+				tetromino_x += 1
+				tetromino = tetromino.rotatedRight()
+			} else if canPlace(tetromino.rotatedRight(), tetromino_x-1, tetromino_y) {
+				tetromino_x -= 1
+				tetromino = tetromino.rotatedRight()
 			}
-			switch key {
-			case rl.KeyR, rl.KeyUp:
-				{
-					// NOTE: fds :+1:
-					if canPlace(tetromino.rotatedRight(), tetromino_x, tetromino_y) {
-						tetromino = tetromino.rotatedRight()
-					} else if canPlace(tetromino.rotatedRight(), tetromino_x, tetromino_y-1) {
-						// FIXME: isso não funciona para peças como L J e I
-						tetromino_y -= 1
-						tetromino = tetromino.rotatedRight()
-					} else if canPlace(tetromino.rotatedRight(), tetromino_x+1, tetromino_y) {
-						tetromino_x += 1
-						tetromino = tetromino.rotatedRight()
-					} else if canPlace(tetromino.rotatedRight(), tetromino_x-1, tetromino_y) {
-						tetromino_x -= 1
-						tetromino = tetromino.rotatedRight()
-					}
+		} else if rl.IsKeyDown(rl.KeyLeft) || rl.IsKeyDown(rl.KeyH) || button == 4 {
+			if canPlace(tetromino, tetromino_x-1, tetromino_y) {
+				tetromino_x -= 1
+			}
+		} else if rl.IsKeyDown(rl.KeyRight) || rl.IsKeyDown(rl.KeyL) || button == 2 {
+			if canPlace(tetromino, tetromino_x+1, tetromino_y) {
+				tetromino_x += 1
+			}
+		} else if rl.IsKeyDown(rl.KeyDown) || rl.IsKeyDown(rl.KeyJ) || button == 3 {
+			step()
+		} else if rl.IsKeyPressed(rl.KeySpace) || rl.IsGamepadButtonPressed(1, 7) {
+			for {
+				if tetromino_y == 0 {
+					break
 				}
-			case rl.KeyLeft, rl.KeyH:
-				{
-					if canPlace(tetromino, tetromino_x-1, tetromino_y) {
-						tetromino_x -= 1
-					}
-				}
-			case rl.KeyRight, rl.KeyL:
-				{
-					if canPlace(tetromino, tetromino_x+1, tetromino_y) {
-						tetromino_x += 1
-					}
-				}
-			case rl.KeyDown, rl.KeyJ:
-				{
-					step()
-				}
-			case rl.KeySpace:
-				{
-					for {
-						if tetromino_y == 0 {
-							break
-						}
-						step()
-					}
+				step()
+			}
+		} else if rl.IsKeyPressed(rl.KeyP) {
+			is_paused = !is_paused
+		} else if (rl.IsKeyDown(rl.KeyC) || button == 5) && can_hold {
 
-				}
+			can_hold = false
 
-			case rl.KeyP:
-				is_paused = !is_paused
-			case rl.KeyC:
-				{
-					if !can_hold {
-						break
-					}
+			temp := hold
+			hold = tetromino.piece
 
-					can_hold = false
-
-					temp := hold
-					hold = tetromino.piece
-
-					if !is_holding {
-						is_holding = true
-						tetromino = next()
-					} else {
-						tetromino = Tetromino{temp, UP}
-					}
-
-					tetromino_x = 0
-					tetromino_y = 0
-				}
-			// NOTE: só para debug
-			case rl.KeyE:
-				{
-					tetromino_x = 0
-					tetromino_y = 0
-					tip = (tip + 1) % len(tetrominos)
-					tetromino.piece = tetrominos[tip]
-				}
-
+			if !is_holding {
+				is_holding = true
+				tetromino = next()
+			} else {
+				tetromino = Tetromino{temp, UP}
 			}
 
+			tetromino_x = 0
+			tetromino_y = 0
+
+		} else if rl.IsKeyDown(rl.KeyE) {
+			tetromino_x = 0
+			tetromino_y = 0
+			tip = (tip + 1) % len(tetrominos)
+			tetromino.piece = tetrominos[tip]
 		}
 		// }}} input
 
@@ -491,7 +463,6 @@ func main() {
 				}
 			}
 		}
-
 
 		rl.EndDrawing()
 	}
